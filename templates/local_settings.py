@@ -80,11 +80,11 @@ TIME_ZONE = '{{time_zone}}'
 
 ## Data directories
 # NOTE: If any directory is unreadable in STANDARD_DIRS it will break metric browsing
-#CERES_DIR = '/opt/graphite/storage/ceres'
-#WHISPER_DIR = '/opt/graphite/storage/whisper'
-#RRD_DIR = '/opt/graphite/storage/rrd'
+CERES_DIR = '/opt/graphite/storage/ceres'
+WHISPER_DIR = '/opt/graphite/storage/whisper'
+RRD_DIR = '/opt/graphite/storage/rrd'
 # Data directories using the "Standard" finder (i.e. not Ceres)
-#STANDARD_DIRS = [WHISPER_DIR, RRD_DIR] # Default: set from the above variables
+STANDARD_DIRS = [{{ standard_dirs|join(',') }}] # Default: set from the above variables
 #LOG_DIR = '/opt/graphite/storage/log/webapp'
 #INDEX_FILE = '/opt/graphite/storage/index'  # Search index file
 
@@ -182,7 +182,7 @@ TIME_ZONE = '{{time_zone}}'
 #
 DATABASES = {
     'default': {
-        'NAME': '{{database.db}}',
+        'NAME': '{{database.dbname}}',
         'ENGINE': 'django.db.backends.mysql',
         'USER': '{{database.user}}',
         'PASSWORD': '{{database.password}}',

@@ -1,11 +1,11 @@
 # coding: utf-8
 
-from lib.api import *  # noqa
+from fabkit import *  # noqa
 from fablib import python
 
 
 class Carbon():
-    datamap = {
+    data = {
         'user': 'nobody',
         'group': 'nobody',
         'initscript': {
@@ -19,25 +19,23 @@ class Carbon():
         }
     }
 
-    def __init__(self, datamap={}):
-        self.datamap.update(datamap)
-        print 'carbon'
+    def __init__(self, data={}):
+        if data:
+            self.data.update(data)
+        else:
+            self.data = env.cluster.get('carbon', {})
 
     def setup(self):
-        datamap = self.datamap
         is_updated = self.install_carbon()
-        for name in datamap['daemons']:
-            service_name = 'carbon-' + name
-            service.enable(service_name)
-            service.start(service_name, pty=False)
+        for name in self.data['daemons']:
+            carbon = Service('carbon-' + name).enable().start(pty=False)
             if is_updated:
-                service.restart(service_name, pty=False)
+                carbon.restart(pty=False)
 
         return 0
 
     def install_carbon(self):
-        datamap = self.datamap
-
+        data = self.data
         python.setup()
         python.install_from_git('carbon',
                                 'https://github.com/graphite-project/carbon.git -b megacarbon')
@@ -45,8 +43,8 @@ class Carbon():
         graphite_dir = '/opt/graphite'
         storage_dir = os.path.join(graphite_dir, 'storage')
         storage_files = os.path.join(storage_dir, '*')
-        sudo('chown {0}:{1} {2}'.format(datamap['user'], datamap['group'], storage_dir))
-        sudo('chown {0}:{1} {2}'.format(datamap['user'], datamap['group'], storage_files))
+        sudo('chown {0}:{1} {2}'.format(data['user'], data['group'], storage_dir))
+        sudo('chown {0}:{1} {2}'.format(data['user'], data['group'], storage_files))
 
         daemons_dir = '/opt/graphite/conf/carbon-daemons/'
         daemon_confs = [
@@ -69,22 +67,38 @@ class Carbon():
         ]
 
         is_updated = False
-        for name, daemon in datamap['daemons'].items():
+        for name, daemon in data['daemons'].items():
             daemon_dir = os.path.join(daemons_dir, name)
             filer.mkdir(daemon_dir)
 
             for daemon_conf in daemon_confs:
                 is_updated = filer.template(os.path.join(daemon_dir, daemon_conf), data={
-                    'user': datamap['user'],
+                    'user': data['user'],
                     'daemon': daemon,
                 }, src_target=os.path.join('carbon-daemon', daemon_conf)) or is_updated
 
             is_updated = filer.template('/etc/init.d/carbon-{0}'.format(name), '755', data={
                 'description': 'Carbon Daemon: {0}'.format(name),
                 'name': name,
-                'user': datamap['user'],
+                'user': data['user'],
                 'exec': os.path.join(graphite_dir, 'bin/carbon-daemon.py'),
-                'initscript': datamap['initscript'],
+                'initscript': data['initscript'],
             }, src_target='carbon-initscript') or is_updated
 
         return is_updated
+
+
+class CarbonRelay(Carbon):
+    def __init__(self, data={}):
+        if data:
+            self.data.update(data)
+        else:
+            self.data.update(env.cluster.get('carbon_relay', {}))
+
+
+class CarbonCache(Carbon):
+    def __init__(self, data={}):
+        if data:
+            self.data.update(data)
+        else:
+            self.data.update(env.cluster.get('carbon_cache', {}))

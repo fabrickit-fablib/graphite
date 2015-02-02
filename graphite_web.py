@@ -1,11 +1,12 @@
 # coding: utf-8
 
-from lib.api import *  # noqa
+import os
+from fabkit import env, Service, Package, sudo, filer, conf
 from fablib import python
 
 
 class GraphiteWeb():
-    datamap = {
+    data = {
         'user': 'nobody',
         'group': 'nobody',
         'secret_key': 'default',
@@ -16,31 +17,33 @@ class GraphiteWeb():
         ]
     }
 
-    def __init__(self, datamap):
-        self.datamap.update(datamap)
+    def __init__(self, data=None):
+        if data:
+            self.data.update(data)
+        else:
+            self.data.update(env.cluster.get('graphite_web', {}))
 
     def setup(self):
         is_updated = self.install_graphite_web()
-        service.enable('httpd')
-        service.start('httpd')
+        httpd = Service('httpd').enable().start()
         if is_updated:
-            service.restart('httpd')
+            httpd.restart()
 
-        self.db_sync()
+        # self.db_sync()
         return True
 
-    def db_sync(self):
+    def syncdb(self):
         sudo('sh -c "cd /opt/graphite/webapp/ && ./manage.py syncdb --noinput"')
 
     def install_graphite_web(self):
-        datamap = self.datamap
+        data = self.data
 
-        package.install('pycairo')
-        package.install('cairo-devel')
-        package.install('bitmap-fonts-compat')
-        package.install('httpd')
-        package.install('mod_wsgi')
-        package.install('MySQL-python')
+        Package('pycairo').install()
+        Package('cairo-devel').install()
+        Package('bitmap-fonts-compat').install()
+        Package('httpd').install()
+        Package('mod_wsgi').install()
+        Package('MySQL-python').install()
 
         python.setup()
         sudo('pip install django==1.6.8')
@@ -48,7 +51,7 @@ class GraphiteWeb():
                                 'https://github.com/graphite-project/graphite-web.git')
 
         log_dir = '/opt/graphite/storage/log/webapp/'
-        owner = '{0[user]}:{0[group]}'.format(datamap)
+        owner = '{0[user]}:{0[group]}'.format(data)
         filer.mkdir(log_dir, owner=owner)
         log_files = ['access.log', 'error.log', 'exception.log', 'info.log']
         for log_file in log_files:
@@ -59,16 +62,16 @@ class GraphiteWeb():
         sudo('cp {0} /opt/graphite/webapp/'.format(manage_py))
 
         is_updated = filer.template('/opt/graphite/webapp/graphite/local_settings.py',
-                                    data=self.datamap)
+                                    data=data)
 
         is_updated = filer.template('/opt/graphite/webapp/graphite/settings.py',
-                                    data=self.datamap) or is_updated
+                                    data=data) or is_updated
 
         is_updated = filer.template('/opt/graphite/conf/graphite.wsgi') or is_updated
 
         is_updated = filer.template('/etc/httpd/conf.d/graphite-vhost.conf', data={
-            'user': datamap['user'],
-            'group': datamap['group'],
+            'user': data['user'],
+            'group': data['group'],
         }) or is_updated
 
         return is_updated
