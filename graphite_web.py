@@ -6,30 +6,25 @@ from fablib import python
 
 
 class GraphiteWeb():
-    data = {
-        'user': 'nobody',
-        'group': 'nobody',
-        'secret_key': 'default',
-        'time_zone': 'Asia/Tokyo',
-        'storage_finders': [
-            'graphite.finders.ceres.CeresFinder',
-            # 'graphite.finders.standard.StandardFinder',
-        ]
-    }
-
-    def __init__(self, data=None):
-        if data:
-            self.data.update(data)
-        else:
-            self.data.update(env.cluster.get('graphite_web', {}))
+    def __init__(self):
+        self.data = {
+            'user': 'nobody',
+            'group': 'nobody',
+            'secret_key': 'default',
+            'time_zone': 'Asia/Tokyo',
+            'storage_finders': [
+                'graphite.finders.ceres.CeresFinder',
+                # 'graphite.finders.standard.StandardFinder',
+            ]
+        }
 
     def setup(self):
+        self.data.update(env.cluster['graphite_web'])
         is_updated = self.install_graphite_web()
         httpd = Service('httpd').enable().start()
         if is_updated:
             httpd.restart()
 
-        # self.db_sync()
         return True
 
     def syncdb(self):

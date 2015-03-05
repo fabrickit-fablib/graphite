@@ -5,27 +5,30 @@ from fablib import python
 
 
 class Carbon():
-    data = {
-        'user': 'nobody',
-        'group': 'nobody',
-        'initscript': {
-            'wait_interval': 5,
-            'wait_interval_time': 1,
-        },
-        'daemons': {
-            # 'carbon_relay0': {
-            #
-            # }
+    def __init__(self, role=None):
+        self.data = {
+            'user': 'nobody',
+            'group': 'nobody',
+            'initscript': {
+                'wait_interval': 5,
+                'wait_interval_time': 1,
+            },
+            'daemons': {
+                # 'carbon_relay0': {
+                #
+                # }
+            }
         }
-    }
 
-    def __init__(self, data={}):
-        if data:
-            self.data.update(data)
-        else:
-            self.data = env.cluster.get('carbon', {})
+        self.role = role
+
+    def init_data(self):
+        self.data.update(env.cluster.get('carbon', {}))
+        if self.role is not None:
+            self.data.update(self.data[self.role])
 
     def setup(self):
+        self.init_data()
         is_updated = self.install_carbon()
         for name in self.data['daemons']:
             carbon = Service('carbon-' + name).enable().start(pty=False)
@@ -75,7 +78,7 @@ class Carbon():
                 is_updated = filer.template(os.path.join(daemon_dir, daemon_conf), data={
                     'user': data['user'],
                     'daemon': daemon,
-                }, src_target=os.path.join('carbon-daemon', daemon_conf)) or is_updated
+                }, src_target=daemon_conf) or is_updated
 
             is_updated = filer.template('/etc/init.d/carbon-{0}'.format(name), '755', data={
                 'description': 'Carbon Daemon: {0}'.format(name),
@@ -86,19 +89,3 @@ class Carbon():
             }, src_target='carbon-initscript') or is_updated
 
         return is_updated
-
-
-class CarbonRelay(Carbon):
-    def __init__(self, data={}):
-        if data:
-            self.data.update(data)
-        else:
-            self.data.update(env.cluster.get('carbon_relay', {}))
-
-
-class CarbonCache(Carbon):
-    def __init__(self, data={}):
-        if data:
-            self.data.update(data)
-        else:
-            self.data.update(env.cluster.get('carbon_cache', {}))
