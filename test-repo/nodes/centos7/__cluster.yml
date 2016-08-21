@@ -1,0 +1,12 @@
+__status:
+  fabscript_map:
+    graphite/base: {status: 0, task_status: 100}
+    test/base: {status: 0, task_status: 0}
+  node_map:
+    192.168.122.50:
+      fabscript_map:
+        graphite/base: {check_msg: '', check_status: -1, msg: failed, status: 0, task_status: 500}
+        test/base: {check_msg: '', check_status: -1, msg: success, status: 0, task_status: 0}
+    localhost:
+      fabscript_map:
+        test/base: {check_msg: '', check_status: -1, msg: registered, status: 0, task_status: 100}
