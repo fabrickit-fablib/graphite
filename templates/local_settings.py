@@ -11,24 +11,21 @@
 # CRSF middleware, cookie storage, etc. This should be set identically among
 # instances if used behind a load balancer.
 #SECRET_KEY = 'UNSAFE_DEFAULT'
-SECRET_KEY = '{{secret_key}}'
 
 # In Django 1.5+ set this to the list of hosts your graphite instances is
 # accessible as. See:
 # https://docs.djangoproject.com/en/dev/ref/settings/#std:setting-ALLOWED_HOSTS
 #ALLOWED_HOSTS = [ '*' ]
+ALLOWED_HOSTS = [ '*' ]
 
 # Set your local timezone (Django's default is America/Chicago)
 # If your graphs appear to be offset by a couple hours then this probably
 # needs to be explicitly set to your local timezone.
 #TIME_ZONE = 'America/Los_Angeles'
-TIME_ZONE = '{{time_zone}}'
+TIME_ZONE = 'Asia/Tokyo'
 
 # Override this to provide documentation specific to your Graphite deployment
 #DOCUMENTATION_URL = "http://graphite.readthedocs.org/"
-
-# Metric data and graphs are cached for one minute by default
-#DEFAULT_CACHE_DURATION = 60
 
 # Logging
 #LOG_RENDERING_PERFORMANCE = True
@@ -52,24 +49,24 @@ TIME_ZONE = '{{time_zone}}'
 # unneeded cache misses. Set to [] to disable caching of images and fetched data
 #MEMCACHE_HOSTS = ['10.10.10.10:11211', '10.10.10.11:11211', '10.10.10.12:11211']
 #DEFAULT_CACHE_DURATION = 60 # Cache images and data for 1 minute
-#MEMCACHE_KEY_PREFIX = 'graphite'
 
-# Set URL_PREFIX when deploying graphite-web to a non-root location
-#URL_PREFIX = '/graphite'
 
 #####################################
 # Filesystem Paths #
 #####################################
 # Change only GRAPHITE_ROOT if your install is merely shifted from /opt/graphite
 # to somewhere else
-#GRAPHITE_ROOT = '/opt/graphite'
+GRAPHITE_ROOT = '/usr/share/graphite'
 
 # Most installs done outside of a separate tree such as /opt/graphite will only
 # need to change these three settings. Note that the default settings for each
 # of these is relative to GRAPHITE_ROOT
 #CONF_DIR = '/opt/graphite/conf'
 #STORAGE_DIR = '/opt/graphite/storage'
-#STATIC_ROOT = '/opt/graphite/static'
+#CONTENT_DIR = '/opt/graphite/webapp/content'
+CONF_DIR = '/etc/graphite-web'
+STORAGE_DIR = '/var/lib/graphite-web'
+CONTENT_DIR = '/usr/share/graphite/webapp/content'
 
 # To further or fully customize the paths, modify the following. Note that the
 # default settings for each of these are relative to CONF_DIR and STORAGE_DIR
@@ -77,17 +74,21 @@ TIME_ZONE = '{{time_zone}}'
 ## Webapp config files
 #DASHBOARD_CONF = '/opt/graphite/conf/dashboard.conf'
 #GRAPHTEMPLATES_CONF = '/opt/graphite/conf/graphTemplates.conf'
+DASHBOARD_CONF = '/etc/graphite-web/dashboard.conf'
+GRAPHTEMPLATES_CONF = '/etc/graphite-web/graphTemplates.conf'
 
 ## Data directories
-# NOTE: If any directory is unreadable in STANDARD_DIRS it will break metric browsing
-CERES_DIR = '/opt/graphite/storage/ceres'
-WHISPER_DIR = '/opt/graphite/storage/whisper'
-RRD_DIR = '/opt/graphite/storage/rrd'
-# Data directories using the "Standard" finder (i.e. not Ceres)
-STANDARD_DIRS = [{{ standard_dirs|join(',') }}] # Default: set from the above variables
+# NOTE: If any directory is unreadable in DATA_DIRS it will break metric browsing
+#WHISPER_DIR = '/opt/graphite/storage/whisper'
+#RRD_DIR = '/opt/graphite/storage/rrd'
+#DATA_DIRS = [WHISPER_DIR, RRD_DIR] # Default: set from the above variables
 #LOG_DIR = '/opt/graphite/storage/log/webapp'
 #INDEX_FILE = '/opt/graphite/storage/index'  # Search index file
-
+WHISPER_DIR = '/var/lib/carbon/whisper'
+RRD_DIR = '/var/lib/carbon/rrd'
+DATA_DIRS = [WHISPER_DIR, RRD_DIR] # Default: set from the above variables
+LOG_DIR = '/var/log/graphite-web/'
+INDEX_FILE = '/var/lib/graphite-web/index'  # Search index file
 
 #####################################
 # Email Configuration #
@@ -111,8 +112,7 @@ STANDARD_DIRS = [{{ standard_dirs|join(',') }}] # Default: set from the above va
 #USE_LDAP_AUTH = True
 #LDAP_SERVER = "ldap.mycompany.com"
 #LDAP_PORT = 389
-#LDAP_USE_TLS = False
-#        OR
+#	OR
 #LDAP_URI = "ldaps://ldap.mycompany.com:636"
 #LDAP_SEARCH_BASE = "OU=users,DC=mycompany,DC=com"
 #LDAP_BASE_USER = "CN=some_readonly_account,DC=mycompany,DC=com"
@@ -124,12 +124,10 @@ STANDARD_DIRS = [{{ standard_dirs|join(',') }}] # Default: set from the above va
 # For example:
 #
 #import ldap
-#ldap.set_option(ldap.OPT_X_TLS_REQUIRE_CERT, ldap.OPT_X_TLS_ALLOW) # Use ldap.OPT_X_TLS_DEMAND to force TLS
-#ldap.set_option(ldap.OPT_REFERRALS, 0) # Enable for Active Directory
+#ldap.set_option(ldap.OPT_X_TLS_REQUIRE_CERT, ldap.OPT_X_TLS_ALLOW)
 #ldap.set_option(ldap.OPT_X_TLS_CACERTDIR, "/etc/ssl/ca")
 #ldap.set_option(ldap.OPT_X_TLS_CERTFILE, "/etc/ssl/mycert.pem")
 #ldap.set_option(ldap.OPT_X_TLS_KEYFILE, "/etc/ssl/mykey.pem")
-#ldap.set_option(ldap.OPT_DEBUG_LEVEL, 65535) # To enable verbose debugging
 # See http://www.python-ldap.org/ for further details on these options.
 
 ## REMOTE_USER authentication. See: https://docs.djangoproject.com/en/dev/howto/auth-remote-user/
@@ -137,27 +135,6 @@ STANDARD_DIRS = [{{ standard_dirs|join(',') }}] # Default: set from the above va
 
 # Override the URL for the login link (e.g. for django_openid_auth)
 #LOGIN_URL = '/account/login'
-
-
-###############################
-# Authorization for Dashboard #
-###############################
-# By default, there is no security on dashboards - any user can add, change or delete them.
-# This section provides 3 different authorization models, of varying strictness.
-
-# If set to True, users must be logged in to save or delete dashboards. Defaults to False
-#DASHBOARD_REQUIRE_AUTHENTICATION = True
-
-# If set to the name of a user group, dashboards can be saved and deleted by any user in this
-# group.  Groups can be set in the Django Admin app, or in LDAP.  Defaults to None.
-# NOTE: Ignored if DASHBOARD_REQUIRE_AUTHENTICATION is not set
-#DASHBOARD_REQUIRE_EDIT_GROUP = 'dashboard-editors-group'
-
-# If set to True, dashboards can be saved or deleted by any user having the appropriate 
-# (change or delete) permission (as set in the Django Admin app).  Defaults to False
-# NOTE: Ignored if DASHBOARD_REQUIRE_AUTHENTICATION is not set
-#DASHBOARD_REQUIRE_PERMISSIONS = True
-
 
 
 ##########################
@@ -169,9 +146,10 @@ STANDARD_DIRS = [{{ standard_dirs|join(',') }}] # Default: set from the above va
 # Django models such as saved graphs, dashboards, user preferences, etc.
 # Metric data is not stored here.
 #
-# DO NOT FORGET TO RUN 'django-admin.py syncdb' AFTER SETTING UP A NEW DATABASE
+# DO NOT FORGET TO RUN 'manage.py syncdb' AFTER SETTING UP A NEW DATABASE
 #
 # The following built-in database engines are available:
+#  django.db.backends.postgresql          # Removed in Django 1.4
 #  django.db.backends.postgresql_psycopg2
 #  django.db.backends.mysql
 #  django.db.backends.sqlite3
@@ -182,14 +160,15 @@ STANDARD_DIRS = [{{ standard_dirs|join(',') }}] # Default: set from the above va
 #
 DATABASES = {
     'default': {
-        'NAME': '{{database.dbname}}',
+        'NAME': 'graphite',
         'ENGINE': 'django.db.backends.mysql',
-        'USER': '{{database.user}}',
-        'PASSWORD': '{{database.password}}',
-        'HOST': '{{database.host}}',
-        'PORT': '{{database.port}}'
+        'USER': 'root',
+        'PASSWORD': '',
+        'HOST': 'localhost',
+        'PORT': ''
     }
 }
+
 
 
 #########################
@@ -202,19 +181,25 @@ DATABASES = {
 # metric data. Note that the first server to return a match for a query will be
 # used.
 #CLUSTER_SERVERS = ["10.0.2.2:80", "10.0.2.3:80"]
-CLUSTER_SERVERS = ["{{cluster_servers|join('", "')}}"]
 
 ## These are timeout values (in seconds) for requests to remote webapps
-#REMOTE_FIND_TIMEOUT = 3.0             # Timeout for metric find requests
-#REMOTE_FETCH_TIMEOUT = 6.0            # Timeout to fetch series data
-#REMOTE_RETRY_DELAY = 60.0             # Time before retrying a failed remote webapp
-#REMOTE_READER_CACHE_SIZE_LIMIT = 1000 # Maximum number of remote URL queries to cache
-#FIND_CACHE_DURATION = 300             # Time to cache remote metric find results
-# If the query doesn't fall entirely within the FIND_TOLERANCE window
-# we disregard the window. This prevents unnecessary remote fetches
-# caused when carbon's cache skews node.intervals, giving the appearance
-# remote systems have data we don't have locally, which we probably do.
-#FIND_TOLERANCE = 2 * FIND_CACHE_DURATION
+#REMOTE_STORE_FETCH_TIMEOUT = 6   # Timeout to fetch series data
+#REMOTE_STORE_FIND_TIMEOUT = 2.5  # Timeout for metric find requests
+#REMOTE_STORE_RETRY_DELAY = 60    # Time before retrying a failed remote webapp
+#REMOTE_STORE_USE_POST = False    # Use POST instead of GET for remote requests
+#REMOTE_FIND_CACHE_DURATION = 300 # Time to cache remote metric find results
+
+## Prefetch cache
+# set to True to fetch all metrics using a single http request per remote server
+# instead of one http request per target, per remote server.
+# Especially useful when generating graphs with more than 4-5 targets or if
+# there's significant latency between this server and the backends. (>20ms)
+#REMOTE_PREFETCH_DATA = False
+
+# During a rebalance of a consistent hash cluster, after a partition event on a replication > 1 cluster,
+# or in other cases we might receive multiple TimeSeries data for a metric key.  Merge them together rather
+# that choosing the "most complete" one (pre-0.9.14 behaviour).
+#REMOTE_STORE_MERGE_RESULTS = True
 
 ## Remote rendering settings
 # Set to True to enable rendering of Graphs on a remote webapp
@@ -232,24 +217,11 @@ CLUSTER_SERVERS = ["{{cluster_servers|join('", "')}}"]
 #
 # You *should* use 127.0.0.1 here in most cases
 #CARBONLINK_HOSTS = ["127.0.0.1:7002:a", "127.0.0.1:7102:b", "127.0.0.1:7202:c"]
-CARBONLINK_HOSTS = ["{{carbonlink_hosts|join('", "')}}"]
 #CARBONLINK_TIMEOUT = 1.0
-#CARBONLINK_RETRY_DELAY = 15 # Seconds to blacklist a failed remote server
-
-# A "keyfunc" is a user-defined python function that is given a metric name
-# and returns a string that should be used when hashing the metric name.
-# This is important when your hashing has to respect certain metric groupings.
-#CARBONLINK_HASHING_KEYFUNC = "/opt/graphite/bin/keyfuncs.py:my_keyfunc"
-
-# Prefix set in carbon for the carbon specific metrics.  Default in carbon is 'carbon'
-#CARBON_METRIC_PREFIX='carbon'
-
-# The replication factor to use with consistent hashing
-# This should usually match the value configured in Carbon
-#REPLICATION_FACTOR = 1
-
-# How often should render.datalib.fetch() retry to get remote data
-# MAX_FETCH_RETRIES = 2
+# Using 'query-bulk' queries for carbon
+# It's more effective, but python-carbon 0.9.13 (or latest from 0.9.x branch) is required
+# See https://github.com/graphite-project/carbon/pull/132 for details
+#CARBONLINK_QUERY_BULK = False
 
 #####################################
 # Additional Django Settings #
