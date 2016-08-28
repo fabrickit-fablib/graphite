@@ -29,8 +29,9 @@ class Graphite(SimpleBase):
         if self.is_tag('package'):
             self.install_packages()
             filer.mkdir('/var/lib/carbon/whisper')
+            filer.mkdir('/etc/graphite/graphite')
 
-        if filer.template('/data/graphite/schemas'):
+        if filer.template('/etc/graphite/schemas'):
             self.handlers['restart_go-carbon'] = True
 
         self.start_services().enable_services()

@@ -181,6 +181,7 @@ DATABASES = {
 # metric data. Note that the first server to return a match for a query will be
 # used.
 #CLUSTER_SERVERS = ["10.0.2.2:80", "10.0.2.3:80"]
+# CLUSTER_SERVERS = ["192.168.122.50:40080", "192.168.122.51:40080"]
 
 ## These are timeout values (in seconds) for requests to remote webapps
 #REMOTE_STORE_FETCH_TIMEOUT = 6   # Timeout to fetch series data
@@ -217,6 +218,7 @@ DATABASES = {
 #
 # You *should* use 127.0.0.1 here in most cases
 #CARBONLINK_HOSTS = ["127.0.0.1:7002:a", "127.0.0.1:7102:b", "127.0.0.1:7202:c"]
+# CARBONLINK_HOSTS = ["127.0.0.1:7002"]
 #CARBONLINK_TIMEOUT = 1.0
 # Using 'query-bulk' queries for carbon
 # It's more effective, but python-carbon 0.9.13 (or latest from 0.9.x branch) is required
